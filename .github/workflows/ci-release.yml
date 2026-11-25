@@ -136,7 +136,7 @@ jobs:
       - name: Expo Prebuild (Android)
         run: |
           npx expo prebuild --platform android --clean
-          echo "org.gradle.caching=true" >> android/gradle.properties
+          printf '\norg.gradle.caching=true\n' >> android/gradle.properties
 
       - name: Build Android APK & AAB
         env:
