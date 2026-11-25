@@ -53,7 +53,11 @@ export default function RootLayout() {
   }, [accentColor, isDark]);
 
   useEffect(() => {
-    runMigrations();
+    try {
+      runMigrations();
+    } catch (error) {
+      console.error('[RootLayout] Database migration failed:', error);
+    }
     void initializeNotifications();
     void taskRepository.getPendingReminders().then((pending) => {
       for (const task of pending) {

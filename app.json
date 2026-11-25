@@ -2,7 +2,7 @@
   "expo": {
     "name": "Liquid Notes",
     "slug": "liquid-notes-v2",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "orientation": "portrait",
     "icon": "./assets/icon-note.jpg",
     "scheme": "liquidnotes",
