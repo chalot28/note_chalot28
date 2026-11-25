@@ -146,6 +146,10 @@ jobs:
         run: |
           cd ios
           pod install || pod install --repo-update
+          if [ -f "Pods/fmt/include/fmt/base.h" ]; then
+            sed -i '' 's/#  define FMT_USE_CONSTEVAL 1/#  define FMT_USE_CONSTEVAL 0/g' Pods/fmt/include/fmt/base.h
+            sed -i '' 's/#define FMT_USE_CONSTEVAL 1/#define FMT_USE_CONSTEVAL 0/g' Pods/fmt/include/fmt/base.h
+          fi
 
       - name: Build iOS Archive & IPA
         env:
@@ -178,6 +182,7 @@ jobs:
               -scheme "$SCHEME" \
               -configuration Release \
               -archivePath "$RUNNER_TEMP/App.xcarchive" \
+              CLANG_ENABLE_EXPLICIT_MODULES=NO \
               DEVELOPMENT_TEAM="$IOS_TEAM_ID"
 
             cat > $RUNNER_TEMP/ExportOptions.plist <<EOF
@@ -203,6 +208,7 @@ jobs:
               -scheme "$SCHEME" \
               -configuration Release \
               -archivePath "$RUNNER_TEMP/App.xcarchive" \
+              CLANG_ENABLE_EXPLICIT_MODULES=NO \
               CODE_SIGNING_ALLOWED=NO \
               CODE_SIGNING_REQUIRED=NO \
               CODE_SIGN_IDENTITY=""
