@@ -1,0 +1,111 @@
+import type { FontFamilyOption, ThemeConfig, ThemePreset, ThemePresetId } from '@/core/theme/theme.types';
+
+export const THEME_PRESETS: Record<ThemePresetId, ThemePreset> = {
+  'frosted-crystal': {
+    id: 'frosted-crystal',
+    name: 'Frosted Crystal',
+    subtitle: 'Sáng trong tinh khiết',
+    isDark: false,
+    blurIntensity: 68,
+    glassOpacity: 0.32,
+    borderRadius: 22,
+    specularStrength: 0.85,
+    accentColor: '#0A84FF',
+    meshColors: ['#EBF4FF', '#D6E8FF', '#F3ECFF', '#DFF5F2'],
+    textPrimary: '#0F172A',
+    textSecondary: '#475569',
+    textMuted: '#64748B',
+  },
+  'obsidian-glass': {
+    id: 'obsidian-glass',
+    name: 'Obsidian Glass',
+    subtitle: 'Tối OLED sâu thẳm',
+    isDark: true,
+    blurIntensity: 28,
+    glassOpacity: 0.08,
+    borderRadius: 22,
+    specularStrength: 0.65,
+    accentColor: '#38BDF8',
+    meshColors: ['#04070D', '#0B1324', '#12182B', '#081B26'],
+    textPrimary: '#F8FAFC',
+    textSecondary: '#CBD5E1',
+    textMuted: '#94A3B8',
+  },
+  'aurora-mist': {
+    id: 'aurora-mist',
+    name: 'Aurora Mist',
+    subtitle: 'Cực quang huyền ảo',
+    isDark: true,
+    blurIntensity: 65,
+    glassOpacity: 0.16,
+    borderRadius: 24,
+    specularStrength: 0.72,
+    accentColor: '#5EEAD4',
+    meshColors: ['#071426', '#0E2D38', '#1C224A', '#0D3B3E'],
+    textPrimary: '#F0FDFA',
+    textSecondary: '#CCFBF1',
+    textMuted: '#99F6E4',
+  },
+  'sakura-silk': {
+    id: 'sakura-silk',
+    name: 'Sakura Silk',
+    subtitle: 'Hồng sương dịu nhẹ',
+    isDark: false,
+    blurIntensity: 72,
+    glassOpacity: 0.34,
+    borderRadius: 24,
+    specularStrength: 0.8,
+    accentColor: '#EC4899',
+    meshColors: ['#FFF1F5', '#FFE4EE', '#F8E8FF', '#FFF5EB'],
+    textPrimary: '#2D1622',
+    textSecondary: '#6B3D52',
+    textMuted: '#9D6B82',
+  },
+  'cyber-emerald': {
+    id: 'cyber-emerald',
+    name: 'Cyber Emerald',
+    subtitle: 'Lục bảo công nghệ',
+    isDark: true,
+    blurIntensity: 58,
+    glassOpacity: 0.15,
+    borderRadius: 18,
+    specularStrength: 0.75,
+    accentColor: '#10B981',
+    meshColors: ['#03120E', '#07241B', '#0B2F2A', '#041A1D'],
+    textPrimary: '#ECFDF5',
+    textSecondary: '#A7F3D0',
+    textMuted: '#6EE7B7',
+  },
+};
+
+export const ACCENT_COLOR_SWATCHES: readonly string[] = [
+  '#0A84FF',
+  '#38BDF8',
+  '#5EEAD4',
+  '#10B981',
+  '#EC4899',
+  '#8B5CF6',
+  '#F59E0B',
+  '#F43F5E',
+];
+
+export const FONT_FAMILY_MAP: Record<FontFamilyOption, string> = {
+  sans: 'System',
+  serif: 'Georgia',
+  mono: 'Courier',
+};
+
+export function createDefaultThemeConfig(presetId: ThemePresetId = 'obsidian-glass'): ThemeConfig {
+  const preset = THEME_PRESETS[presetId];
+  return {
+    presetId: preset.id,
+    isDark: preset.isDark,
+    blurIntensity: preset.blurIntensity,
+    glassOpacity: preset.glassOpacity,
+    borderRadius: preset.borderRadius,
+    specularStrength: preset.specularStrength,
+    accentColor: preset.accentColor,
+    meshColors: [...preset.meshColors],
+    fontFamily: 'sans',
+  };
+}

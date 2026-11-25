@@ -1,0 +1,58 @@
+{
+  "expo": {
+    "name": "Liquid Notes",
+    "slug": "liquid-notes-v2",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "liquidnotes",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.liquidnotes.app",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Sử dụng Face ID để mở khóa ghi chú và không gian riêng tư.",
+        "NSCameraUsageDescription": "Sử dụng Camera để quét mã QR thêm tài khoản 2FA ngoại tuyến."
+      }
+    },
+    "android": {
+      "package": "com.liquidnotes.app",
+      "permissions": [
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.USE_FINGERPRINT",
+        "android.permission.CAMERA",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.SCHEDULE_EXACT_ALARM",
+        "android.permission.VIBRATE",
+        "android.permission.WAKE_LOCK"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Cho phép quét mã QR 2FA ngoại tuyến."
+        }
+      ],
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Cho phép mở khóa ứng dụng và Không gian riêng bằng Face ID."
+        }
+      ],
+      [
+        "expo-secure-store",
+        {
+          "configureAndroidBackup": false,
+          "faceIDPermission": "Cho phép truy cập khóa mã hóa an toàn trong Secure Enclave."
+        }
+      ],
+      "react-native-quick-crypto",
+      "expo-asset"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
