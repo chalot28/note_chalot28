@@ -1,7 +1,7 @@
-import { MMKV } from 'react-native-mmkv';
+import { createMMKV } from 'react-native-mmkv';
 import type { StateStorage } from 'zustand/middleware';
 
-export const mmkv = new MMKV({
+export const mmkv = createMMKV({
   id: 'liquid-notes-mmkv',
 });
 
@@ -31,7 +31,7 @@ export const mmkvStorage = {
     mmkv.set(key, JSON.stringify(value));
   },
   remove(key: string): void {
-    mmkv.delete(key);
+    mmkv.remove(key);
   },
 };
 
@@ -41,6 +41,6 @@ export const zustandMmkvStorage: StateStorage = {
     mmkv.set(name, value);
   },
   removeItem: (name: string): void => {
-    mmkv.delete(name);
+    mmkv.remove(name);
   },
 };

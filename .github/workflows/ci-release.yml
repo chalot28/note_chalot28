@@ -101,6 +101,7 @@ jobs:
     needs: [check, bundle-smoke]
     if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && needs.check.outputs.should_build == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -116,6 +117,9 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
+
+      - name: Setup Gradle cache
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Accept Android SDK licenses
         run: |
@@ -144,7 +148,8 @@ jobs:
           chmod +x gradlew
           if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
             echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > app/release.keystore
-            ./gradlew assembleRelease bundleRelease --no-daemon \
+            ./gradlew assembleRelease bundleRelease --no-daemon --console=plain --max-workers=2 \
+              -PreactNativeArchitectures=arm64-v8a,armeabi-v7a \
               -PMYAPP_UPLOAD_STORE_FILE=release.keystore \
               -PMYAPP_UPLOAD_STORE_PASSWORD="$ANDROID_KEYSTORE_PASSWORD" \
               -PMYAPP_UPLOAD_KEY_ALIAS="$ANDROID_KEY_ALIAS" \
@@ -153,7 +158,8 @@ jobs:
             cp app/build/outputs/bundle/release/app-release.aab "../dist-android/liquid-notes-v${{ needs.check.outputs.version }}-android.aab"
           else
             echo "No ANDROID_KEYSTORE_BASE64 secret found; building installable debug APK and release AAB."
-            ./gradlew assembleDebug bundleRelease --no-daemon
+            ./gradlew assembleDebug bundleRelease --no-daemon --console=plain --max-workers=2 \
+              -PreactNativeArchitectures=arm64-v8a,armeabi-v7a
             cp app/build/outputs/apk/debug/app-debug.apk "../dist-android/liquid-notes-v${{ needs.check.outputs.version }}-android.apk"
             cp app/build/outputs/bundle/release/app-release.aab "../dist-android/liquid-notes-v${{ needs.check.outputs.version }}-android.aab"
           fi
@@ -181,6 +187,7 @@ jobs:
     needs: [check, bundle-smoke]
     if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && needs.check.outputs.should_build == 'true'
     runs-on: macos-latest
+    timeout-minutes: 30
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -232,14 +239,20 @@ jobs:
             mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
             cp $RUNNER_TEMP/profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
 
-            xcodebuild archive \
+            if ! xcodebuild archive \
               -workspace "$WORKSPACE" \
               -scheme "$SCHEME" \
               -configuration Release \
               -destination 'generic/platform=iOS' \
               -archivePath "$RUNNER_TEMP/App.xcarchive" \
               CLANG_ENABLE_EXPLICIT_MODULES=NO \
-              DEVELOPMENT_TEAM="$IOS_TEAM_ID"
+              DEVELOPMENT_TEAM="$IOS_TEAM_ID" > "$RUNNER_TEMP/xcodebuild.log" 2>&1; then
+              echo "=== XCODEBUILD ERRORS ==="
+              grep -nE "(error:|fatal error:|ARCHIVE FAILED|\*\* )" "$RUNNER_TEMP/xcodebuild.log" | tail -n 80 || true
+              echo "=== LAST 120 LINES ==="
+              tail -n 120 "$RUNNER_TEMP/xcodebuild.log"
+              exit 1
+            fi
 
             cat > $RUNNER_TEMP/ExportOptions.plist <<EOF
           <?xml version="1.0" encoding="UTF-8"?>
@@ -259,7 +272,7 @@ jobs:
             cp "$IPA_FILE" "../dist-ios/liquid-notes-v${{ needs.check.outputs.version }}-ios.ipa"
           else
             echo "No Apple signing secrets found; building unsigned IPA for CI verification/sideloading."
-            xcodebuild archive \
+            if ! xcodebuild archive \
               -workspace "$WORKSPACE" \
               -scheme "$SCHEME" \
               -configuration Release \
@@ -268,7 +281,13 @@ jobs:
               CLANG_ENABLE_EXPLICIT_MODULES=NO \
               CODE_SIGNING_ALLOWED=NO \
               CODE_SIGNING_REQUIRED=NO \
-              CODE_SIGN_IDENTITY=""
+              CODE_SIGN_IDENTITY="" > "$RUNNER_TEMP/xcodebuild.log" 2>&1; then
+              echo "=== XCODEBUILD ERRORS ==="
+              grep -nE "(error:|fatal error:|ARCHIVE FAILED|\*\* )" "$RUNNER_TEMP/xcodebuild.log" | tail -n 80 || true
+              echo "=== LAST 120 LINES ==="
+              tail -n 120 "$RUNNER_TEMP/xcodebuild.log"
+              exit 1
+            fi
             mkdir -p "$RUNNER_TEMP/Payload"
             APP_DIR=$(find "$RUNNER_TEMP/App.xcarchive/Products/Applications" -maxdepth 1 -name "*.app" | head -n 1)
             cp -R "$APP_DIR" "$RUNNER_TEMP/Payload/"
