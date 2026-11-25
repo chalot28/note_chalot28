@@ -33,3 +33,19 @@ npm run ios
 # Typecheck
 npm run typecheck
 ```
+
+## License
+
+**All Rights Reserved — Source-Available, Personal Use Only (Non-Commercial, No-Derivatives)**
+
+Copyright © 2026 `chalot28`. All rights reserved.
+
+- **Allowed:** You may view and read this source code for transparency/security inspection, and download and use the official builds for **personal, non-commercial use only**.
+- **Not Allowed:** Without explicit written permission from the author, you may **not** modify, adapt, create derivative works, redistribute, fork for private/public redistribution, claim ownership of any part of this codebase, or use this software or its source code for any **commercial purpose**.
+
+---
+
+**Bản quyền & Giấy phép sử dụng (Tiếng Việt):**
+
+- **Được phép:** Xem/đọc mã nguồn công khai để kiểm chứng minh bạch, tải và sử dụng ứng dụng cho mục đích **cá nhân, phi thương mại**.
+- **Nghiêm cấm:** Chỉnh sửa, tạo bản phái sinh, phân phối lại, tự nhận làm sản phẩm riêng, hoặc sử dụng mã nguồn/ứng dụng cho **mục đích thương mại** dưới mọi hình thức khi chưa có sự đồng ý bằng văn bản của tác giả (`chalot28`).

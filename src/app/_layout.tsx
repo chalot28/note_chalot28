@@ -9,6 +9,7 @@ import { runMigrations } from '@/core/db/migrations';
 import { initializeNotifications, registerNotificationHandlers } from '@/core/notifications/notifee.setup';
 import { ReminderBannerHost } from '@/core/notifications/ReminderBannerHost';
 import { reminderScheduler } from '@/core/notifications/reminder.scheduler';
+import { UpdateBannerHost } from '@/core/update/UpdateBannerHost';
 import { PrivacyShieldOverlay } from '@/core/security/PrivacyShieldOverlay';
 import { secureStorage } from '@/core/storage/secure.storage';
 import { useThemeStore } from '@/core/theme/themeStore';
@@ -119,6 +120,7 @@ export default function RootLayout() {
           </ThemeProvider>
           <PrivacyShieldOverlay />
           <ReminderBannerHost />
+          <UpdateBannerHost />
         </GlassSheetProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
