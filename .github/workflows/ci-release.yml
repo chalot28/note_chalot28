@@ -159,10 +159,10 @@ jobs:
             cp app/build/outputs/apk/release/app-release.apk "../dist-android/liquid-notes-v${{ needs.check.outputs.version }}-android.apk"
             cp app/build/outputs/bundle/release/app-release.aab "../dist-android/liquid-notes-v${{ needs.check.outputs.version }}-android.aab"
           else
-            echo "No ANDROID_KEYSTORE_BASE64 secret found; building installable debug APK and release AAB."
-            ./gradlew assembleDebug bundleRelease --no-daemon --console=plain \
+            echo "No ANDROID_KEYSTORE_BASE64 secret found; building release APK & AAB signed with debug keystore."
+            ./gradlew assembleRelease bundleRelease --no-daemon --console=plain \
               -PreactNativeArchitectures=arm64-v8a,armeabi-v7a
-            cp app/build/outputs/apk/debug/app-debug.apk "../dist-android/liquid-notes-v${{ needs.check.outputs.version }}-android.apk"
+            cp app/build/outputs/apk/release/app-release.apk "../dist-android/liquid-notes-v${{ needs.check.outputs.version }}-android.apk"
             cp app/build/outputs/bundle/release/app-release.aab "../dist-android/liquid-notes-v${{ needs.check.outputs.version }}-android.aab"
           fi
 
@@ -176,6 +176,7 @@ jobs:
           unzip -t "$AAB_PATH" >/dev/null
           unzip -l "$APK_PATH" | grep -q "AndroidManifest.xml"
           unzip -l "$APK_PATH" | grep -q "classes.dex"
+          unzip -l "$APK_PATH" | grep -q "assets/index.android.bundle"
           echo "Verified APK & AAB structure successfully."
 
       - name: Upload Android APK & AAB artifacts
