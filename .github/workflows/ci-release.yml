@@ -89,7 +89,7 @@ jobs:
       - name: Expo Prebuild (Android)
         run: npx expo prebuild --platform android --clean
 
-      - name: Build Android APK (Signed Release or Installable Debug)
+      - name: Build Android APK & AAB
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -101,23 +101,25 @@ jobs:
           chmod +x gradlew
           if [ -n "$ANDROID_KEYSTORE_BASE64" ]; then
             echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > app/release.keystore
-            ./gradlew assembleRelease --no-daemon \
+            ./gradlew assembleRelease bundleRelease --no-daemon \
               -PMYAPP_UPLOAD_STORE_FILE=release.keystore \
               -PMYAPP_UPLOAD_STORE_PASSWORD="$ANDROID_KEYSTORE_PASSWORD" \
               -PMYAPP_UPLOAD_KEY_ALIAS="$ANDROID_KEY_ALIAS" \
               -PMYAPP_UPLOAD_KEY_PASSWORD="$ANDROID_KEY_PASSWORD"
             cp app/build/outputs/apk/release/app-release.apk "../dist-android/liquid-notes-v${{ needs.check.outputs.version }}-android.apk"
+            cp app/build/outputs/bundle/release/app-release.aab "../dist-android/liquid-notes-v${{ needs.check.outputs.version }}-android.aab"
           else
-            echo "No ANDROID_KEYSTORE_BASE64 secret found; building installable debug APK."
-            ./gradlew assembleDebug --no-daemon
+            echo "No ANDROID_KEYSTORE_BASE64 secret found; building installable debug APK and release AAB."
+            ./gradlew assembleDebug bundleRelease --no-daemon
             cp app/build/outputs/apk/debug/app-debug.apk "../dist-android/liquid-notes-v${{ needs.check.outputs.version }}-android.apk"
+            cp app/build/outputs/bundle/release/app-release.aab "../dist-android/liquid-notes-v${{ needs.check.outputs.version }}-android.aab"
           fi
 
-      - name: Upload Android APK artifact
+      - name: Upload Android APK & AAB artifacts
         uses: actions/upload-artifact@v4
         with:
           name: android-apk
-          path: dist-android/*.apk
+          path: dist-android/*
 
   build-ios:
     name: Build iOS IPA
