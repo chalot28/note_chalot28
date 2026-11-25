@@ -5,7 +5,9 @@ export function useAppStateBlur(): {
   appState: AppStateStatus;
   isBlurred: boolean;
 } {
-  const [appState, setAppState] = useState<AppStateStatus>(AppState.currentState);
+  const [appState, setAppState] = useState<AppStateStatus>(
+    (AppState.currentState as AppStateStatus | null | undefined) ?? 'active',
+  );
   const [isWindowBlurred, setIsWindowBlurred] = useState<boolean>(
     Platform.OS === 'web' && typeof document !== 'undefined' ? document.hidden : false,
   );

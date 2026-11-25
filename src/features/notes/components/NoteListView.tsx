@@ -63,7 +63,6 @@ export function NoteListView({
       key={viewMode}
       data={notes}
       numColumns={isGrid ? 2 : 1}
-      estimatedItemSize={isGrid ? 132 : 104}
       keyExtractor={(item) => item.id}
       renderItem={renderItem}
       showsVerticalScrollIndicator={false}

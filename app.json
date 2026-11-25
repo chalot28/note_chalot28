@@ -54,7 +54,8 @@
         }
       ],
       "react-native-quick-crypto",
-      "expo-asset"
+      "expo-asset",
+      "expo-status-bar"
     ],
     "experiments": {
       "typedRoutes": true

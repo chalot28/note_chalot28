@@ -24,11 +24,9 @@ export function GlassProgressRing({
   }, [animatedProgress, clamped]);
 
   const circlePath = useMemo(() => {
-    const path = Skia.Path.Make();
     const radius = (size - strokeWidth) / 2;
     const center = size / 2;
-    path.addCircle(center, center, radius);
-    return path;
+    return Skia.PathBuilder.Make().addCircle(center, center, radius).build();
   }, [size, strokeWidth]);
 
   const percent = Math.round(clamped * 100);

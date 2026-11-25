@@ -13,12 +13,16 @@ on:
         default: 'false'
         type: boolean
 
+concurrency:
+  group: ci-release-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   check:
-    name: Test, Typecheck & Version Gate
+    name: Strict Typecheck, Unit Tests, Security & Version Gate
     runs-on: ubuntu-latest
     outputs:
       should_build: ${{ steps.version.outputs.should_build }}
@@ -39,11 +43,21 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: TypeScript check
+      - name: TypeScript strict check
         run: npm run typecheck
 
-      - name: Run unit tests
+      - name: Run full unit, crypto, TOTP, parity & formula test suite
         run: npm test
+
+      - name: Run SAST & mobile security audit
+        run: npm run audit:security
+
+      - name: Audit production dependencies (advisory report)
+        continue-on-error: true
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Validate Expo public config & plugins
+        run: npx expo config --type public > /dev/null
 
       - name: Check app.json version for new release
         id: version
@@ -53,9 +67,38 @@ jobs:
           FORCE_BUILD: ${{ github.event.inputs.force_build || 'false' }}
         run: node scripts/check-version.mjs
 
-  build-android:
-    name: Build Android APK
+  bundle-smoke:
+    name: Metro Bundle Verification (${{ matrix.platform }})
     needs: check
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        platform: [android, ios, web]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Export Metro bundle for ${{ matrix.platform }}
+        run: |
+          npx expo export --platform ${{ matrix.platform }} --output-dir "dist-smoke-${{ matrix.platform }}"
+          test -d "dist-smoke-${{ matrix.platform }}"
+          BUNDLE_COUNT=$(find "dist-smoke-${{ matrix.platform }}" -type f \( -name "*.js" -o -name "*.hbc" \) | wc -l)
+          echo "Generated $BUNDLE_COUNT JS/HBC bundle file(s) for ${{ matrix.platform }}"
+          test "$BUNDLE_COUNT" -ge 1
+
+  build-android:
+    name: Build & Verify Android APK/AAB
+    needs: [check, bundle-smoke]
     if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && needs.check.outputs.should_build == 'true'
     runs-on: ubuntu-latest
     steps:
@@ -115,6 +158,18 @@ jobs:
             cp app/build/outputs/bundle/release/app-release.aab "../dist-android/liquid-notes-v${{ needs.check.outputs.version }}-android.aab"
           fi
 
+      - name: Verify Android APK & AAB integrity
+        run: |
+          APK_PATH="dist-android/liquid-notes-v${{ needs.check.outputs.version }}-android.apk"
+          AAB_PATH="dist-android/liquid-notes-v${{ needs.check.outputs.version }}-android.aab"
+          test -s "$APK_PATH"
+          test -s "$AAB_PATH"
+          unzip -t "$APK_PATH" >/dev/null
+          unzip -t "$AAB_PATH" >/dev/null
+          unzip -l "$APK_PATH" | grep -q "AndroidManifest.xml"
+          unzip -l "$APK_PATH" | grep -q "classes.dex"
+          echo "Verified APK & AAB structure successfully."
+
       - name: Upload Android APK & AAB artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -122,8 +177,8 @@ jobs:
           path: dist-android/*
 
   build-ios:
-    name: Build iOS IPA
-    needs: check
+    name: Build & Verify iOS IPA
+    needs: [check, bundle-smoke]
     if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && needs.check.outputs.should_build == 'true'
     runs-on: macos-latest
     steps:
@@ -181,6 +236,7 @@ jobs:
               -workspace "$WORKSPACE" \
               -scheme "$SCHEME" \
               -configuration Release \
+              -destination 'generic/platform=iOS' \
               -archivePath "$RUNNER_TEMP/App.xcarchive" \
               CLANG_ENABLE_EXPLICIT_MODULES=NO \
               DEVELOPMENT_TEAM="$IOS_TEAM_ID"
@@ -207,6 +263,7 @@ jobs:
               -workspace "$WORKSPACE" \
               -scheme "$SCHEME" \
               -configuration Release \
+              -destination 'generic/platform=iOS' \
               -archivePath "$RUNNER_TEMP/App.xcarchive" \
               CLANG_ENABLE_EXPLICIT_MODULES=NO \
               CODE_SIGNING_ALLOWED=NO \
@@ -219,6 +276,14 @@ jobs:
             cp "$RUNNER_TEMP/unsigned.ipa" "../dist-ios/liquid-notes-v${{ needs.check.outputs.version }}-ios-unsigned.ipa"
           fi
 
+      - name: Verify iOS IPA integrity
+        run: |
+          IPA_FILE=$(find dist-ios -name "*.ipa" | head -n 1)
+          test -s "$IPA_FILE"
+          unzip -t "$IPA_FILE" >/dev/null
+          unzip -l "$IPA_FILE" | grep -q "Payload/.*\.app/Info.plist"
+          echo "Verified IPA structure successfully: $IPA_FILE"
+
       - name: Upload iOS IPA artifact
         uses: actions/upload-artifact@v4
         with:
@@ -230,7 +295,17 @@ jobs:
     needs: [check, build-android, build-ios]
     if: always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && needs.check.outputs.should_build == 'true' && (needs.build-android.result == 'success' || needs.build-ios.result == 'success')
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
       - name: Download Android artifact
         if: needs.build-android.result == 'success'
         uses: actions/download-artifact@v4
@@ -245,7 +320,7 @@ jobs:
           name: ios-ipa
           path: release-assets
 
-      - name: Generate version.json
+      - name: Generate version.json & SHA-256 checksums
         run: |
           mkdir -p release-assets
           cat > release-assets/version.json <<EOF
@@ -256,6 +331,7 @@ jobs:
             "repository": "${{ github.repository }}"
           }
           EOF
+          (cd release-assets && sha256sum * > checksums-sha256.txt)
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

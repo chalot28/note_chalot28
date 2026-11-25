@@ -16,13 +16,18 @@ export default function TabsLayout() {
         headerShown: false,
         sceneStyle: { backgroundColor: 'transparent' },
       }}
-      tabBar={({ state, navigation }) => {
+      tabBar={({ state, navigateToTab }) => {
         const activeRoute = state.routes[state.index]?.name ?? 'index';
         return (
           <GlassDock
             items={DOCK_ITEMS}
             activeKey={activeRoute}
-            onSelect={(key) => navigation.navigate(key)}
+            onSelect={(key) => {
+              const target = state.routes.find((r) => r.name === key);
+              if (target) {
+                navigateToTab(target.key);
+              }
+            }}
           />
         );
       }}
